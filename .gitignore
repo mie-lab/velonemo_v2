@@ -1,0 +1,9 @@
+# PyCharm
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter checkpoints (if you ever use notebooks)
+.ipynb_checkpoints/
