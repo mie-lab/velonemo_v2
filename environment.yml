@@ -1,0 +1,12 @@
+name: velonemo_v2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.14
+  - geopandas
+  - numpy
+  - pandas
+  - rdflib
+  - sparqlwrapper
+prefix: C:\Users\agrisiute\AppData\Local\anaconda3\envs\velonemo_v2
