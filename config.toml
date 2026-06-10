@@ -1,0 +1,6 @@
+[openalex]
+email = "YOUR EMAIL"
+api_key = "OPEN_ALEX_API_KEY"
+
+[paths]
+out_dir = "YOUR_OUT_DIR"
