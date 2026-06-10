@@ -9,4 +9,5 @@ dependencies:
   - pandas
   - rdflib
   - sparqlwrapper
-prefix: C:\Users\agrisiute\AppData\Local\anaconda3\envs\velonemo_v2
+pip:
+  -pyalex
