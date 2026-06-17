@@ -14,17 +14,14 @@ Methodology:
 
 Outputs:
   <out_dir>/manifest.jsonl   Auditable line-delimited tracking JSON with inclusion paths.
-  <out_dir>/pdfs/<id>.pdf    Local, rate-limited caching of open-access PDF targets.
 
 Requirements:
-  pip install pyalex requests
+  pip install pyalex
 """
 
 import json
-import time
 import tomllib
 from pathlib import Path
-import requests
 from pyalex import Works, config
 
 # ---------------------------------------------------------------------------
@@ -65,7 +62,11 @@ SUBJECTS = [
 ]
 
 QUERIES = [f"({s}) AND {EVAL_TERMS}" for s in SUBJECTS]
-EXCLUDE_FIELDS = "!fields/11|!fields/13|!fields/14|!fields/15|!fields16/!fields/19|!fields/24|!fields/25|!fields/27|!fields/29|!fields/30|!fields/31|!fields/34|!fields/35"
+
+# Fields to drop (medical, chemistry, materials, etc.). OpenAlex parses `|` as OR,
+# so `!11|!13` means "not 11 OR not 13" — true for every work. To exclude a set you
+# must AND the negations, i.e. apply one negated filter per field (see run_query).
+EXCLUDE_FIELDS = [11, 13, 14, 15, 16, 19, 24, 25, 27, 29, 30, 31, 34, 35]
 
 
 def work_record(w, query):
@@ -82,19 +83,39 @@ def work_record(w, query):
         "pdf_url": best.get("pdf_url"),
         "included_via": query,
         "cited_by_count": w.get("cited_by_count"),
+        "abstract": reconstruct_abstract(w.get("abstract_inverted_index")),
         "screening_status": "pending",
     }
+
+
+def reconstruct_abstract(inv_index):
+    """OpenAlex returns abstract_inverted_index: {word: [positions]}."""
+    if not inv_index:
+        return None
+    positions = {}
+    for word, idxs in inv_index.items():
+        for i in idxs:
+            positions[i] = word
+    return " ".join(positions[i] for i in sorted(positions))
 
 
 def run_query(q, records):
     pager = (
         Works()
-        .search_filter(title_and_abstract=q)
+        .filter(title_and_abstract={"search": q})
         .filter(open_access={"is_oa": True})
         .filter(language=LANGUAGE)
         .filter(publication_year=f"{YEAR_RANGE[0]}-{YEAR_RANGE[1]}")
-        .filter(primary_topic={"field": {"id": EXCLUDE_FIELDS}})
-        .paginate(per_page=200)
+    )
+    for fid in EXCLUDE_FIELDS:                       # AND the negations
+        pager = pager.filter(**{"primary_topic.field.id": f"!fields/{fid}"})
+    pager = (
+        pager.select([
+            "id", "doi", "title", "publication_year",
+            "primary_location", "open_access", "best_oa_location",
+            "cited_by_count", "abstract_inverted_index",
+        ])
+        .paginate(per_page=200, n_max=None)
     )
     n_new, n_total = 0, 0
     for page in pager:
@@ -107,23 +128,6 @@ def run_query(q, records):
     print(f"  [query] {q[:80]}...  hits={n_total} new={n_new}")
 
 
-def download_pdfs(records, outdir: Path):
-    outdir.mkdir(parents=True, exist_ok=True)
-    for r in records.values():
-        dest = outdir / f"{r['openalex_id']}.pdf"
-        if not r.get("pdf_url") or dest.exists():
-            continue
-        try:
-            resp = requests.get(r["pdf_url"], timeout=60)
-            if resp.ok and resp.content[:4] == b"%PDF":
-                dest.write_bytes(resp.content)
-        except requests.RequestException:
-            pass
-        time.sleep(0.5)
-    n = len(list(outdir.glob("*.pdf")))
-    print(f"  [pdf] {n} PDFs in {outdir}")
-
-
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -131,9 +135,6 @@ def main():
     print("Running corpus queries...")
     for q in QUERIES:
         run_query(q, records)
-
-    #print("\nDownloading OA PDFs...")
-    #download_pdfs(records, OUT_DIR / "pdfs")
 
     manifest = OUT_DIR / "manifest.jsonl"
     with manifest.open("w") as f:
