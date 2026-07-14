@@ -1,0 +1,9 @@
+[openalex]
+email = "YOUR_EMAIL"
+api_key = "OPENALEX_API_KEY"
+
+[paths]
+out_dir = "ABSOLUTE_PATH_TO/nemo_2/corpus"
+
+[keys]
+gemini_api_key = "GEMINI_API_KEY"
