@@ -22,7 +22,7 @@ self-consistency, cached results — every document treated identically, every r
    build 1 script ──▶ run on the fixed paper set ──▶ inspect output ──▶ GATE: adequate?
         ▲                                                                   │
         └────────────── refine (schema / prompt / thresholds) ◀─────────────┘ no
-                                                                             │ yes
+                                                                            │ yes
                                                                         next step
 ```
 
@@ -47,8 +47,8 @@ Step 2  EXTEND THE ONTOLOGY (mining done · curation open)         step2_mine.py
         to v1 and handed to HUMAN CURATION — the only step that changes the ontology.
         The v2 axes (perspective, provenance, criteria hierarchy) are authored into
         ontology/nemo_onto_3.rdf.
-        GATE: Ayda curates step2/report/candidates.csv → accepted concepts enter the
-        v2 ontology (governed: changelog, versioning, stable URIs).
+        GATE: Ayda curates step2/report/step2_candidates.md → accepted concepts enter
+        the v2 ontology (governed: changelog, versioning, stable URIs).
 
 Step 3  POPULATE & RESOLVE (planned)
         Extract claims from the 541 primary papers into the v2 model (each assertion a
@@ -71,10 +71,10 @@ frozen per extraction run and every claim is stamped with it.
 
 | Step | Script(s) | Data | Doc | Output |
 |---|---|---|---|---|
-| 0 | `corpus_builder.py`, `screen_corpus.py` | `corpus/` | — | `corpus/screening/*.jsonl` |
-| 1 | `step1_extraction_check.py` | `step1/` | [docs/step1_validation.md](docs/step1_validation.md) | `step1/report/` |
+| 0 | `corpus_builder.py`, `screen_corpus.py` | `corpus/` | — | `corpus/screening/` |
+| 1 | `step1_extraction_check.py` | `step1/`, `context/metrics.xlsx` | [docs/step1_validation.md](docs/step1_validation.md) | `step1/report/` |
 | 2 | `step2_mine.py`, `step2_contrast.py` | `step2/` | [docs/step2_ontology_extension.md](docs/step2_ontology_extension.md) | `step2/report/`, `ontology/nemo_onto_3.rdf` |
-| — | `velonemo.py` — loads the ontology vocabulary; the single access point for all scripts | `ontology/`, `context/` | — | — |
+| — | `velonemo.py` — loads the ontology vocabulary; the single access point for all scripts | `ontology/` | — | — |
 
 ## Documentation (`docs/`)
 
@@ -92,9 +92,11 @@ frozen per extraction run and every claim is stamped with it.
 
 ## Ontology (`ontology/`) and source materials (`context/`)
 
-`ontology/` holds the evolving artifact: `nemo_onto_2.rdf` (the reconciled v1 — **source of truth
-for the extraction vocabulary**), `nemo_onto_3.rdf` (v1 + the authored v2 axes), and the
-`CHANGELOG.md`. `context/` holds the source materials the pipeline draws on:
+`ontology/` holds the evolving artifact (tracked in git): `nemo_onto_2.rdf` (the reconciled v1 —
+**source of truth for the extraction vocabulary**), `nemo_onto_3.rdf` (v1 + the authored v2 axes),
+and the `CHANGELOG.md`. `context/` holds the source materials the pipeline draws on — it is a
+**local-only input, gitignored** for copyright + size, so it is not part of a fresh clone (Step 1
+reads `context/metrics.xlsx` as its ground truth):
 
 - `metrics.xlsx` — the human v1 extraction (275 rows); the **ground truth** for Step 1.
 - `metrics.nq` — the published v1 knowledge graph.
@@ -107,14 +109,14 @@ for the extraction vocabulary**), `nemo_onto_3.rdf` (v1 + the authored v2 axes),
 - **Done:** corpus built + screened; Step 1 validated the instrument; Step 2 mining + contrast ran
   (v1's criteria confirmed essentially complete; anchoring bias ≈ 0); the v2 axes authored; all v1
   artifacts (OWL ↔ xlsx ↔ nq) reconciled.
-- **Open:** Step-2 candidate curation (`step2/report/candidates.csv`); apply the direct
+- **Open:** Step-2 candidate curation (`step2/report/step2_candidates.md`); apply the direct
   `hasPerspective` claim wiring to `nemo_onto_3.rdf`; then Step 3.
 
 ## Setup
 
 ```bash
 conda env create -f environment.yml        # env: velonemo_v2
-# add your Gemini key to config.toml (see config.example.toml) — never committed
+# add your Gemini key to config.toml (see config.example.toml)
 python step1_extraction_check.py           # rerun the Step-1 validation (cached, idempotent)
 python step2_mine.py && python step2_contrast.py   # rerun the Step-2 mining + contrast
 ```
