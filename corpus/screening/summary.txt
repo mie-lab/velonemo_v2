@@ -1,0 +1,11 @@
+total screened: 4422
+
+  primary          541
+  review            22
+  guideline         20
+  needs_review      10
+  excluded        3829
+
+needs_review breakdown:
+  uncertain relevance      : 2
+  relevant, uncertain type : 8
